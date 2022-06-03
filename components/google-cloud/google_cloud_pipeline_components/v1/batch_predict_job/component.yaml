@@ -164,6 +164,9 @@ description: |
             corresponding field of the `Model.explanation_metadata` object is inherited.
 
             For more details, see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/ExplanationSpec#explanationmetadata.
+        explanation_metadata_gcs_source (Optional[str]):
+            The GCS uri location to read explanation metadata configuration from a JSON format file
+            for this BatchPredictionJob.
         explanation_parameters (Optional[dict]):
             Parameters to configure explaining for Model's predictions.
             Can be specified only if `generate_explanation` is set to `True`.
@@ -229,6 +232,7 @@ inputs:
 - {name: manual_batch_tuning_parameters_batch_size, type: Integer, optional: true, default: 0}
 - {name: generate_explanation, type: Boolean, optional: true, default: False}
 - {name: explanation_metadata, type: JsonObject, optional: true, default: '{}'}
+- {name: explanation_metadata_gcs_source, type: String, optional: true, default: ''}
 - {name: explanation_parameters, type: JsonObject, optional: true, default: '{}'}
 - {name: labels, type: JsonObject, optional: true, default: '{}'}
 - {name: encryption_spec_key_name, type: String, optional: true, default: ''}
@@ -287,7 +291,7 @@ implementation:
           ', "explanation_spec": {',
           '"parameters": ', {inputValue: explanation_parameters},
           ', "metadata": ', {inputValue: explanation_metadata},
-          '}',
+          '}, "explanation_metadata_gcs_source": "', {inputValue: explanation_metadata_gcs_source}, '"',
           ', "labels": ', {inputValue: labels},
           ', "encryption_spec": {"kms_key_name":"', {inputValue: encryption_spec_key_name}, '"}',
           '}'

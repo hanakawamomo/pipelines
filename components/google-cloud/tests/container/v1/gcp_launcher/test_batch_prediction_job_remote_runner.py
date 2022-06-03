@@ -28,6 +28,7 @@ from google_cloud_pipeline_components.container.utils.execution_context import E
 from google_cloud_pipeline_components.proto.gcp_resources_pb2 import GcpResources
 from google_cloud_pipeline_components.container.v1.gcp_launcher import batch_prediction_job_remote_runner
 from google_cloud_pipeline_components.container.v1.gcp_launcher import job_remote_runner
+from google_cloud_pipeline_components.container.v1.gcp_launcher.utils import gcs_util
 from google_cloud_pipeline_components.container.v1.gcp_launcher.utils import json_util
 import requests
 import google.auth
@@ -177,11 +178,10 @@ class BatchPredictionJobRemoteRunnerUtilsTests(unittest.TestCase):
       executor_output = json.load(f, strict=False)
       self.assertEqual(
           executor_output,
-          json.loads(
-              '{"artifacts": {\
+          json.loads('{"artifacts": {\
                 "batchpredictionjob": {"artifacts": [{"metadata": {"resourceName": "job1", "bigqueryOutputTable": "", "bigqueryOutputDataset": "", "gcsOutputDirectory": "gs://foo_gcs_output_directory"}, "name": "foobar", "type": {"schemaTitle": "google.VertexBatchPredictionJob"}, "uri": "https://test_region-aiplatform.googleapis.com/v1/job1"}]},\
                 "gcs_output_directory": {"artifacts": [{"metadata": {}, "name": "gcs_output", "type": {"schemaTitle": "system.Artifact"}, "uri": "gs://foo_gcs_output_directory"}]}}}'
-          ))
+                    ))
 
   @mock.patch.object(aiplatform.gapic, 'JobServiceClient', autospec=True)
   @mock.patch.object(os.path, 'exists', autospec=True)
@@ -334,5 +334,41 @@ class BatchPredictionJobRemoteRunnerUtilsTests(unittest.TestCase):
                     '{"input_baselines": ["1"], "input_tensor_name": "test_name"}'
                 )
         })
+    self.assertEqual(expected_metadata,
+                     job_spec['explanation_spec']['metadata'])
+
+  @mock.patch.object(gcs_util, 'read_text_from_gcs', autospec=True)
+  def test_batch_prediction_job_remote_runner_sanitize_job_spec_from_gcs_source(
+      self, mock_read_text_from_gcs):
+    explanation_payload = (
+        '{"explanation_metadata_gcs_source": '
+        '"gs://test_bucket_name/test_blob_path", "explanation_spec": { '
+        '"metadata": { }, "parameters": {"sampled_shapley_attribution": '
+        '{"path_count": 1}, "top_k": 0 } } }')
+
+    mock_read_text_from_gcs.return_value = (
+        '{"inputs": { "test_input_1": '
+        '{"input_baselines": ["0"]}, "test_input_2": '
+        '{"input_baselines": ["1"], "input_tensor_name": "test_name"} }'
+        '}')
+
+    job_spec = batch_prediction_job_remote_runner.sanitize_job_spec(
+        json_util.recursive_remove_empty(
+            json.loads(explanation_payload, strict=False)))
+
+    mock_read_text_from_gcs.assert_called_once_with(
+        'gs://test_bucket_name/test_blob_path')
+
+    expected_metadata = ExplanationMetadata(
+        inputs={
+            'test_input_1':
+                ExplanationMetadata.InputMetadata.from_json(
+                    '{"input_baselines": ["0"]}'),
+            'test_input_2':
+                ExplanationMetadata.InputMetadata.from_json(
+                    '{"input_baselines": ["1"], "input_tensor_name": "test_name"}'
+                )
+        })
+
     self.assertEqual(expected_metadata,
                      job_spec['explanation_spec']['metadata'])

@@ -14,7 +14,7 @@
 """GCP launcher for batch prediction jobs based on the AI Platform SDK."""
 
 from . import job_remote_runner
-from .utils import artifact_util, json_util, error_util
+from .utils import artifact_util, gcs_util, json_util, error_util
 from google.api_core import retry
 from google.cloud.aiplatform.explain import ExplanationMetadata
 from google_cloud_pipeline_components.types.artifact_types import VertexBatchPredictionJob, BQTable
@@ -29,8 +29,18 @@ _BQ_DATASET_TEMPLATE = r'(bq://(?P<project>.*)\.(?P<dataset>.*))'
 
 def sanitize_job_spec(job_spec):
   """If the job_spec contains explanation metadata, convert to ExplanationMetadata for the job client to recognize."""
-  if ('explanation_spec' in job_spec) and ('metadata'
-                                           in job_spec['explanation_spec']):
+  if ('explanation_spec' in job_spec) and ('explanation_metadata_gcs_source'
+                                           in job_spec):
+    # Read metatdata from a json file
+    gcs_uri = job_spec['explanation_metadata_gcs_source']
+    explanation_metadata = gcs_util.read_text_from_gcs(gcs_uri)
+    job_spec['explanation_spec']['metadata'] = ExplanationMetadata.from_json(
+        explanation_metadata)
+    del job_spec['explanation_metadata_gcs_source']
+    return job_spec
+  elif ('explanation_spec' in job_spec) and ('metadata'
+                                             in job_spec['explanation_spec']):
+    # Read metadata directly from input
     job_spec['explanation_spec']['metadata'] = ExplanationMetadata.from_json(
         json.dumps(job_spec['explanation_spec']['metadata']))
   return job_spec

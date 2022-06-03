@@ -23,7 +23,6 @@ from google_cloud_pipeline_components.v1.batch_predict_job import ModelBatchPred
 from google_cloud_pipeline_components.v1.model import ModelUploadOp
 
 
-
 class ComponentsCompileTest(unittest.TestCase):
 
   def setUp(self):
@@ -32,6 +31,7 @@ class ComponentsCompileTest(unittest.TestCase):
     self._location = "us-central1"
     self._display_name = "test_display_name"
     self._gcs_source = "gs://test_gcs_source"
+    self._explanation_metadata_gcs_source = "gs://test_bucket_name/test_blob_path"
     self._gcs_destination_prefix = "gs://test_gcs_output_dir/batch_prediction"
     self._serving_container_image_uri = "gcr.io/test_project/test_image:test_tag"
     self._artifact_uri = "project/test_artifact_uri"
@@ -84,6 +84,7 @@ class ComponentsCompileTest(unittest.TestCase):
           max_replica_count=3,
           manual_batch_tuning_parameters_batch_size=4,
           generate_explanation=True,
+          explanation_metadata_gcs_source=self._explanation_metadata_gcs_source,
           explanation_metadata={"xai_m": "bar"},
           explanation_parameters={"xai_p": "foo"},
           encryption_spec_key_name="some encryption_spec_key_name",
