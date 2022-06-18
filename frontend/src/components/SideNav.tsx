@@ -31,7 +31,7 @@ import { classes, stylesheet } from 'typestyle';
 import { ExternalLinks, RoutePage, RoutePrefix } from '../components/Router';
 import { commonCss, fontsize } from '../Css';
 import ExperimentsIcon from '../icons/experiments';
-import GitHubIcon from '../icons/GitHub-Mark-120px-plus.png';
+// import GitHubIcon from '../icons/GitHub-Mark-120px-plus.png';
 import PipelinesIcon from '../icons/pipelines';
 import { Apis } from '../lib/Apis';
 import { Deployments, KFP_FLAGS } from '../lib/Flags';
@@ -548,14 +548,14 @@ export class SideNav extends React.Component<SideNavInternalProps, SideNavState>
             collapsed={collapsed}
             icon={className => <DescriptionIcon className={className} />}
           />
-          <ExternalUri
+          {/* <ExternalUri
             title={'Github Repo'}
             to={ExternalLinks.GITHUB}
             collapsed={collapsed}
             icon={className => (
               <img src={GitHubIcon} className={classes(className, css.iconImage)} alt='Github' />
             )}
-          />
+          /> */}
           <hr className={classes(css.separator, collapsed && css.collapsedSeparator)} />
           <IconButton
             className={classes(css.chevron, collapsed && css.collapsedChevron)}

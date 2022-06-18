@@ -20,15 +20,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="theme-color" content="#000000">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' ; frame-ancestors 'self' ; object-src 'none' ; script-src 'self' ; style-src 'self' ">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' ; font-src 'self' https://cdn.jsdelivr.net/npm/public-sans@0.1.6-0/fonts/webfonts/PublicSans-Regular.woff https://cdn.jsdelivr.net/npm/public-sans@0.1.6-0/fonts/webfonts/PublicSans-Medium.woff https://cdn.jsdelivr.net/npm/public-sans@0.1.6-0/fonts/webfonts/PublicSans-SemiBold.woff https://cdn.jsdelivr.net/npm/public-sans@0.1.6-0/fonts/webfonts/PublicSans-Bold.woff ; frame-ancestors 'self' ; img-src 'self' ; object-src 'none' ; report-uri https://www.dropbox.com/csp_log?policy_name=pp-kubeflow ; script-src 'self' 'unsafe-inline' 'unsafe-eval' ; style-src 'self' 'unsafe-inline'">
+    <meta http-equiv="Content-Security-Policy" content="report-uri https://www.dropbox.com/csp_log?policy_name=pp-kubeflow ; script-src 'unsafe-eval' 'strict-dynamic' 'nonce-cXjVLjeI-iyV78s1qSynjw'">
+    <!-- <meta http-equiv="Content-Security-Policy" content="report-uri https://www.dropbox.com/csp_log?policy_name=pp-kubeflow ; script-src 'unsafe-eval' 'strict-dynamic' 'nonce-cXjVLjeI-iyV78s1qSynjw'  ; style-src 'nonce-cXjVLjeI-iyV78s1qSynjw'"> -->
+    <meta property="csp-nonce" content="{{ _kfpNonce }}">
     <link rel="shortcut icon" href="%PUBLIC_URL%/static/favicon.ico">
     <title>Kubeflow Pipelines</title>
-    <script>
+    <script nonce="{{ _kfpNonce }}">
       window.KFP_FLAGS={};
       window.KFP_FLAGS.DEPLOYMENT=null;
       window.KFP_FLAGS.HIDE_SIDENAV=null;
     </script>
-    <script id="kubeflow-client-placeholder"></script>
+    <script nonce="{{ _kfpNonce }}" id="kubeflow-client-placeholder"></script>
+    <% for (key in htmlWebpackPlugin.files.js) { %>
+      <script nonce="{{ _kfpNonce }}" defer src="<%= htmlWebpackPlugin.files.js[key] %>"></script>
+    <% } %>
+    <% for (key in htmlWebpackPlugin.files.css) { %>
+      <link nonce="{{ _kfpNonce }}" href="<%= htmlWebpackPlugin.files.css[key] %>" rel="stylesheet">
+    <% } %>
   </head>
   <body>
     <noscript>
