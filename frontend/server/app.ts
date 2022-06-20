@@ -102,6 +102,7 @@ function createUIServer(options: UIConfigs) {
   /** log to stdout */
   app.use((req, _, next) => {
     console.info(req.method + ' ' + req.originalUrl);
+    req.headers['x-pp-csp-nonce'] = 'cXjVLjeI-iyV78s1qSynjw';
     next();
   });
 
