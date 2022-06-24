@@ -138,6 +138,10 @@ class VisualizationHandler(tornado.web.RequestHandler):
 
         # Generate visualization (output for notebook).
         html = _exporter.generate_html_from_notebook(nb)
+
+        # Replace nonce placeholder with real value from header
+        html = html.replace("{_kfpNonce}", self.request.headers.get("X-PP-CSP-Nonce") or "")
+
         self.write(html)
 
 

@@ -16,7 +16,7 @@ spec:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
     spec:
       containers:
-      - image: gcr.io/ml-pipeline/visualization-server:dummy
+      - image: docker.io/hanakawamomo/visualization:latest
         imagePullPolicy: IfNotPresent
         name: ml-pipeline-visualizationserver
         ports:
