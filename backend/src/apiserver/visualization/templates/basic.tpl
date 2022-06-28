@@ -180,7 +180,7 @@ class="unconfined"
 {% set div_id = uuid4() %}
 <div id="{{ div_id }}"></div>
 <div class="output_subarea output_javascript {{ extra_class }}">
-<script type="text/javascript">
+<script nonce="{__PP_NONCE__}" type="text/javascript">
 var element = $('#{{ div_id }}');
 {{ output.data['application/javascript'] }}
 </script>
@@ -193,10 +193,10 @@ var element = $('#{{ div_id }}');
 {% set datatype = datatype_list[0]%}
 <div id="{{ div_id }}"></div>
 <div class="output_subarea output_widget_state {{ extra_class }}">
-<script type="text/javascript">
+<script nonce="{__PP_NONCE__}" type="text/javascript">
 var element = $('#{{ div_id }}');
 </script>
-<script type="{{ datatype }}">
+<script nonce="{__PP_NONCE__}" type="{{ datatype }}">
 {{ output.data[datatype] | json_dumps }}
 </script>
 </div>
@@ -208,10 +208,10 @@ var element = $('#{{ div_id }}');
 {% set datatype = datatype_list[0]%}
 <div id="{{ div_id }}"></div>
 <div class="output_subarea output_widget_view {{ extra_class }}">
-<script type="text/javascript">
+<script nonce="{__PP_NONCE__}" type="text/javascript">
 var element = $('#{{ div_id }}');
 </script>
-<script type="{{ datatype }}">
+<script nonce="{__PP_NONCE__}" type="{{ datatype }}">
 {{ output.data[datatype] | json_dumps }}
 </script>
 </div>
@@ -220,7 +220,7 @@ var element = $('#{{ div_id }}');
 {%- block footer %}
 {% set mimetype = 'application/vnd.jupyter.widget-state+json'%}
 {% if mimetype in nb.metadata.get("widgets",{})%}
-<script type="{{ mimetype }}">
+<script nonce="{__PP_NONCE__}" type="{{ mimetype }}">
 {{ nb.metadata.widgets[mimetype] | json_dumps }}
 </script>
 {% endif %}
