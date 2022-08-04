@@ -26,7 +26,7 @@ import * as React from 'react';
 import Dropzone from 'react-dropzone';
 import { DocumentationCompilePipeline } from 'src/components/UploadPipelineDialog';
 import { classes, stylesheet } from 'typestyle';
-import { ApiPipeline, ApiPipelineVersion } from '../apis/pipeline';
+import { ApiPipeline, ApiPipelineVersion, ApiRelationship } from '../apis/pipeline';
 import { ApiResourceType } from '../apis/run';
 import BusyButton from '../atoms/BusyButton';
 import Input from '../atoms/Input';
@@ -37,9 +37,10 @@ import { ToolbarProps } from '../components/Toolbar';
 import { color, commonCss, fontsize, padding, zIndex } from '../Css';
 import { Apis, PipelineSortKeys } from '../lib/Apis';
 import Buttons from '../lib/Buttons';
+import { NamespaceContext } from '../lib/KubeflowClient';
 import { URLParser } from '../lib/URLParser';
 import { errorToMessage, logger } from '../lib/Utils';
-import { Page } from './Page';
+import { Page, PageProps } from './Page';
 import ResourceSelector from './ResourceSelector';
 
 interface NewPipelineVersionState {
@@ -110,7 +111,7 @@ const descriptionCustomRenderer: React.FC<CustomRendererProps<string>> = props =
   return <Description description={props.value || ''} forceInline={true} />;
 };
 
-class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
+class NewPipelineVersion extends Page<{ namespace?: string }, NewPipelineVersionState> {
   private _dropzoneRef = React.createRef<Dropzone & HTMLDivElement>();
   private _pipelineVersionNameRef = React.createRef<HTMLInputElement>();
   private _pipelineNameRef = React.createRef<HTMLInputElement>();
@@ -288,8 +289,20 @@ class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
                     {...this.props}
                     title='Choose a pipeline'
                     filterLabel='Filter pipelines'
-                    listApi={async (...args) => {
-                      const response = await Apis.pipelineServiceApi.listPipelines(...args);
+                    listApi={async (
+                      page_token?: string,
+                      page_size?: number,
+                      sort_by?: string,
+                      filter?: string,
+                    ) => {
+                      const response = await Apis.pipelineServiceApi.listPipelines(
+                        page_token,
+                        page_size,
+                        sort_by,
+                        filter,
+                        this.props.namespace ? 'NAMESPACE' : undefined, // resource_reference_key_type
+                        this.props.namespace || undefined, // resource_reference_key_id
+                      );
                       return {
                         nextPageToken: response.next_page_token || '',
                         resources: response.pipelines || [],
@@ -550,6 +563,7 @@ class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
                   this.state.pipelineName!,
                   this.state.pipelineDescription,
                   this.state.file!,
+                  this.props.namespace,
                 )
               ).default_version!
             : this.state.newPipeline && this.state.importMethod === ImportMethod.URL
@@ -558,6 +572,17 @@ class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
                   description: this.state.pipelineDescription,
                   name: this.state.pipelineName!,
                   url: { pipeline_url: this.state.packageUrl },
+                  resource_references: this.props.namespace
+                    ? [
+                        {
+                          key: {
+                            id: this.props.namespace,
+                            type: ApiResourceType.NAMESPACE,
+                          },
+                          relationship: ApiRelationship.OWNER,
+                        },
+                      ]
+                    : [],
                 })
               ).default_version!
             : await this._createPipelineVersion();
@@ -596,6 +621,17 @@ class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
           description: this.state.pipelineDescription,
           name: this.state.pipelineName,
           url: { pipeline_url: this.state.packageUrl },
+          resource_references: this.props.namespace
+            ? [
+                {
+                  key: {
+                    id: this.props.namespace,
+                    type: ApiResourceType.NAMESPACE,
+                  },
+                  relationship: ApiRelationship.OWNER,
+                },
+              ]
+            : [],
         };
         const response = await Apis.pipelineServiceApi.createPipeline(newPipeline);
         return response.id!;
@@ -678,4 +714,10 @@ class NewPipelineVersion extends Page<{}, NewPipelineVersionState> {
   }
 }
 
-export default NewPipelineVersion;
+const EnhancedNewPipelineVersion: React.FC<PageProps> = props => {
+  const namespace = React.useContext(NamespaceContext);
+  return <NewPipelineVersion key={namespace} {...props} namespace={namespace} />;
+};
+
+export default EnhancedNewPipelineVersion;
+export { NewPipelineVersion as TestOnlyNewPipelineVersion };
