@@ -17,6 +17,7 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ListRequest } from 'src/lib/Apis';
+import { NamespaceContext } from 'src/lib/KubeflowClient';
 import {
   Api,
   ArtifactCustomProperties,
@@ -25,7 +26,12 @@ import {
   getArtifactTypes,
   getResourcePropertyViaFallBack,
 } from 'src/mlmd/library';
-import { Artifact, ArtifactType, GetArtifactsRequest } from 'src/third_party/mlmd';
+import {
+  Artifact,
+  ArtifactType,
+  GetArtifactsRequest,
+  ListOperationOptions,
+} from 'src/third_party/mlmd';
 import { classes } from 'typestyle';
 import { ArtifactLink } from '../components/ArtifactLink';
 import CustomTable, {
@@ -46,7 +52,7 @@ import {
   rowFilterFn,
   serviceErrorToString,
 } from '../lib/Utils';
-import { Page } from './Page';
+import { Page, PageProps } from './Page';
 
 interface ArtifactListState {
   artifacts: Artifact[];
@@ -62,7 +68,22 @@ const NAME_FIELDS = [
   getStringEnumKey(ArtifactCustomProperties, ArtifactCustomProperties.DISPLAY_NAME),
 ];
 
-export class ArtifactList extends Page<{}, ArtifactListState> {
+const DBX_ARTIFACT_SOURCE = 'minio';
+const DBX_ARTIFACT_BUCKET = 'dbx-kubeflow';
+
+const makeGetArtifactsRequest = (
+  namespace?: string,
+  filterString?: string, // only support filter by name for now
+): GetArtifactsRequest => {
+  const keyPrefix = namespace || 'shared';
+  let query = `uri LIKE '${DBX_ARTIFACT_SOURCE}://${DBX_ARTIFACT_BUCKET}/${keyPrefix}/%'`;
+  if (!!filterString) {
+    query += `AND custom_properties.name.string_value LIKE '%${filterString}%'`;
+  }
+  return new GetArtifactsRequest().setOptions(new ListOperationOptions().setFilterQuery(query));
+};
+
+export class ArtifactList extends Page<{ namespace?: string }, ArtifactListState> {
   private tableRef = React.createRef<CustomTable>();
   private api = Api.getInstance();
   private artifactTypesMap: Map<number, ArtifactType>;
@@ -141,7 +162,7 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
       );
     }
     if (!this.state.artifacts.length) {
-      const artifacts = await this.getArtifacts();
+      const artifacts = await this.getArtifacts(request.filter);
       this.clearBanner();
       const collapsedAndExpandedRows = await this.getRowsFromArtifacts(request, artifacts);
       if (collapsedAndExpandedRows) {
@@ -173,9 +194,10 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
     <ArtifactLink artifactUri={value} />
   );
 
-  private async getArtifacts(): Promise<Artifact[]> {
+  private async getArtifacts(filter?: string): Promise<Artifact[]> {
     try {
-      const response = await this.api.metadataStoreService.getArtifacts(new GetArtifactsRequest());
+      const request = makeGetArtifactsRequest(this.props.namespace, filter);
+      const response = await this.api.metadataStoreService.getArtifacts(request);
       return response.getArtifactsList();
     } catch (err) {
       // Code === 5 means no record found in backend. This is a temporary workaround.
@@ -272,4 +294,9 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
   }
 }
 
-export default ArtifactList;
+const EnhancedArtifactList: React.FC<PageProps> = props => {
+  const namespace = React.useContext(NamespaceContext);
+  return <ArtifactList key={namespace} {...props} namespace={namespace} />;
+};
+
+export default EnhancedArtifactList;

@@ -17,6 +17,7 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ListRequest } from 'src/lib/Apis';
+import { NamespaceContext } from 'src/lib/KubeflowClient';
 import { ExecutionHelpers } from 'src/mlmd/MlmdUtils';
 import { Api } from 'src/mlmd/library';
 import {
@@ -24,6 +25,7 @@ import {
   ExecutionType,
   GetExecutionsRequest,
   GetExecutionTypesRequest,
+  ListOperationOptions,
 } from 'src/third_party/mlmd';
 import { classes } from 'typestyle';
 import CustomTable, {
@@ -43,7 +45,7 @@ import {
   rowFilterFn,
   serviceErrorToString,
 } from '../lib/Utils';
-import { Page } from './Page';
+import { Page, PageProps } from './Page';
 
 interface ExecutionListState {
   executions: Execution[];
@@ -52,7 +54,12 @@ interface ExecutionListState {
   columns: Column[];
 }
 
-class ExecutionList extends Page<{}, ExecutionListState> {
+const makeGetExecutionsRequest = (namespace?: string): GetExecutionsRequest => {
+  const query = `properties.namespace.string_value = '${namespace || ''}'`;
+  return new GetExecutionsRequest().setOptions(new ListOperationOptions().setFilterQuery(query));
+};
+
+class ExecutionList extends Page<{ namespace?: string }, ExecutionListState> {
   private tableRef = React.createRef<CustomTable>();
   private api = Api.getInstance();
   private executionTypesMap: Map<number, ExecutionType>;
@@ -145,9 +152,8 @@ class ExecutionList extends Page<{}, ExecutionListState> {
 
   private async getExecutions(): Promise<Execution[]> {
     try {
-      const response = await this.api.metadataStoreService.getExecutions(
-        new GetExecutionsRequest(),
-      );
+      const request = makeGetExecutionsRequest(this.props.namespace);
+      const response = await this.api.metadataStoreService.getExecutions(request);
       return response.getExecutionsList();
     } catch (err) {
       // Code === 5 means no record found in backend. This is a temporary workaround.
@@ -247,4 +253,9 @@ class ExecutionList extends Page<{}, ExecutionListState> {
   }
 }
 
-export default ExecutionList;
+const EnhancedExecutionList: React.FC<PageProps> = props => {
+  const namespace = React.useContext(NamespaceContext);
+  return <ExecutionList key={namespace} {...props} namespace={namespace} />;
+};
+
+export default EnhancedExecutionList;

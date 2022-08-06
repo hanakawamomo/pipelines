@@ -22,6 +22,7 @@ export {
   Event,
   Execution,
   ExecutionType,
+  ListOperationOptions,
   Value,
 } from './generated/ml_metadata/proto/metadata_store_pb';
 export { MetadataStoreServicePromiseClient } from './generated/ml_metadata/proto/metadata_store_service_grpc_web_pb';
