@@ -1298,6 +1298,7 @@ class Client(object):
           Server response object containing pipleine id and other information.
         """
 
+        namespace = namespace or self.get_user_namespace()
         response = self._upload_api.upload_pipeline(
             pipeline_package_path, name=pipeline_name, description=description, namespace=namespace)
         if self._is_ipython():
@@ -1345,6 +1346,7 @@ class Client(object):
             pipelineid=pipeline_id,
         )
 
+        namespace = namespace or self.get_user_namespace()
         if description:
             kwargs['description'] = description
         if namespace:
