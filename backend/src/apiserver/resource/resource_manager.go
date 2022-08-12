@@ -1173,7 +1173,7 @@ func (r *ResourceManager) CreatePipelineVersion(apiVersion *api.PipelineVersion,
 		return nil, util.Wrap(err, "Create pipeline version failed")
 	}
 
-	namespace, err := r.GetNamespaceFromPipelineVersion(version.UUID);
+	namespace, err := r.GetNamespaceFromPipelineID(pipelineId);
 	if err != nil {
 		return nil, util.Wrap(err, "Create pipeline version failed")
 	}

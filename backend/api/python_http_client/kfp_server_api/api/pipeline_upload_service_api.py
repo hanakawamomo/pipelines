@@ -107,7 +107,8 @@ class PipelineUploadServiceApi(object):
         all_params = [
             'uploadfile',
             'name',
-            'description'
+            'description',
+            'namespace'
         ]
         all_params.extend(
             [
@@ -140,6 +141,8 @@ class PipelineUploadServiceApi(object):
             query_params.append(('name', local_var_params['name']))  # noqa: E501
         if 'description' in local_var_params and local_var_params['description'] is not None:  # noqa: E501
             query_params.append(('description', local_var_params['description']))  # noqa: E501
+        if 'namespace' in local_var_params and local_var_params['namespace'] is not None:  # noqa: E501
+            query_params.append(('namespace', local_var_params['namespace']))  # noqa: E501
 
         header_params = {}
 
@@ -252,7 +255,8 @@ class PipelineUploadServiceApi(object):
             'uploadfile',
             'name',
             'pipelineid',
-            'description'
+            'description',
+            'namespace'
         ]
         all_params.extend(
             [
@@ -287,6 +291,8 @@ class PipelineUploadServiceApi(object):
             query_params.append(('pipelineid', local_var_params['pipelineid']))  # noqa: E501
         if 'description' in local_var_params and local_var_params['description'] is not None:  # noqa: E501
             query_params.append(('description', local_var_params['description']))  # noqa: E501
+        if 'namespace' in local_var_params and local_var_params['namespace'] is not None:  # noqa: E501
+            query_params.append(('namespace', local_var_params['namespace']))  # noqa: E501
 
         header_params = {}
 

@@ -1366,8 +1366,8 @@ class Client(object):
 
         if self._is_ipython():
             import IPython
-            html = '<a href=%s/#/pipelines/details/%s>Pipeline details</a>.' % (
-                self._get_url_prefix(), response.id)
+            html = '<a href=%s/#/pipelines/details/%s/version/%s>Pipeline details</a>.' % (
+                self._get_url_prefix(), pipeline_id, response.id)
             IPython.display.display(IPython.display.HTML(html))
         return response
 

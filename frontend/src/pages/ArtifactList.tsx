@@ -69,17 +69,18 @@ const NAME_FIELDS = [
 ];
 
 const DBX_ARTIFACT_SOURCE = 'minio';
-const DBX_ARTIFACT_BUCKET = 'dbx-kubeflow';
+const DBX_ARTIFACT_BUCKET = ''; // TODO: look into why bucket name is empty
 
 const makeGetArtifactsRequest = (
   namespace?: string,
   filterString?: string, // only support filter by name for now
 ): GetArtifactsRequest => {
   const keyPrefix = namespace || 'shared';
-  let query = `uri LIKE '${DBX_ARTIFACT_SOURCE}://${DBX_ARTIFACT_BUCKET}/${keyPrefix}/%'`;
+  let query = `uri LIKE '${DBX_ARTIFACT_SOURCE}://${DBX_ARTIFACT_BUCKET}/artifacts/${keyPrefix}/%'`;
   if (!!filterString) {
-    query += `AND custom_properties.name.string_value LIKE '%${filterString}%'`;
+    query += ` AND custom_properties.name.string_value LIKE '%${filterString}%'`;
   }
+  console.debug('query', query);
   return new GetArtifactsRequest().setOptions(new ListOperationOptions().setFilterQuery(query));
 };
 

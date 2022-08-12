@@ -13,11 +13,11 @@ export function commonSetup(
   const indexHtmlContent = `
 <html>
 <head>
-  <script>
+  <script nonce="">
   window.KFP_FLAGS.DEPLOYMENT=null
   window.KFP_FLAGS.HIDE_SIDENAV=null
   </script>
-  <script id="kubeflow-client-placeholder"></script>
+  <script nonce="" id="kubeflow-client-placeholder"></script>
 </head>
 </html>`;
 
