@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **upload_pipeline**
-> ApiPipeline upload_pipeline(uploadfile, name=name, description=description)
+> ApiPipeline upload_pipeline(uploadfile, name=name, description=description, namespace=namespace)
 
 
 
@@ -50,9 +50,10 @@ with kfp_server_api.ApiClient(configuration) as api_client:
     uploadfile = '/path/to/file' # file | The pipeline to upload. Maximum size of 32MB is supported.
 name = 'name_example' # str |  (optional)
 description = 'description_example' # str |  (optional)
+namespace = 'namespace_example' # str | Kubernetes namespace where the pipeline should be uploaded to. (optional)
 
     try:
-        api_response = api_instance.upload_pipeline(uploadfile, name=name, description=description)
+        api_response = api_instance.upload_pipeline(uploadfile, name=name, description=description, namespace=namespace)
         pprint(api_response)
     except ApiException as e:
         print("Exception when calling PipelineUploadServiceApi->upload_pipeline: %s\n" % e)
@@ -65,6 +66,7 @@ Name | Type | Description  | Notes
  **uploadfile** | **file**| The pipeline to upload. Maximum size of 32MB is supported. | 
  **name** | **str**|  | [optional] 
  **description** | **str**|  | [optional] 
+ **namespace** | **str**| Kubernetes namespace where the pipeline should be uploaded to. | [optional] 
 
 ### Return type
 

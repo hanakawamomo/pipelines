@@ -1309,7 +1309,7 @@ class Client(object):
           pipeline_package_path: Local path to the pipeline package.
           pipeline_name: Optional. Name of the pipeline to be shown in the UI.
           description: Optional. Description of the pipeline to be shown in the UI.
-          namespace: Optional. Namespace where the pipeline belongs in. If empty or unspecified, pipeline is public.
+          namespace: Optional. Kubernetes namespace where the pipeline should be uploaded to.
 
         Returns:
           Server response object containing pipleine id and other information.
@@ -1342,7 +1342,7 @@ class Client(object):
           pipeline_id: Optional. Id of the pipeline.
           pipeline_name: Optional. Name of the pipeline.
           description: Optional. Description of the pipeline version to be shown in the UI.
-          namespace: Optional. Namespace where the pipeline belongs in. If empty or unspecified, pipeline is public.
+          namespace: Optional. Kubernetes namespace where the pipeline should be uploaded to.
 
         Returns:
           Server response object containing pipleine id and other information.

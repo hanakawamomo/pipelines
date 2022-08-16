@@ -1372,7 +1372,8 @@
             "name": "namespace",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "description": "Kubernetes namespace where the pipeline should be uploaded to."
           }
         ],
         "tags": [
