@@ -472,11 +472,14 @@ class Client(object):
             IPython.display.display(IPython.display.HTML(html))
         return experiment
 
-    def get_pipeline_id(self, name) -> Optional[str]:
+    def get_pipeline_id(self, name, namespace=None) -> Optional[str]:
         """Find the id of a pipeline by name.
 
         Args:
           name: Pipeline name.
+          namespace: Kubernetes namespace where the experiment was created.
+            For single user deployment, leave it as None;
+            For multi user, input a namespace where the user is authorized.
 
         Returns:
           Returns the pipeline id if a pipeline with the name exists.
@@ -488,7 +491,13 @@ class Client(object):
                 "stringValue": name,
             }]
         })
-        result = self._pipelines_api.list_pipelines(filter=pipeline_filter)
+        namespace = namespace or self.get_user_namespace()
+        result = self._pipelines_api.list_pipelines(
+            filter=pipeline_filter,
+            resource_reference_key_type=kfp_server_api.models.api_resource_type
+            .ApiResourceType.NAMESPACE,
+            resource_reference_key_id=namespace,
+        )
         if result.pipelines is None:
             return None
         if len(result.pipelines) == 1:
@@ -661,7 +670,8 @@ class Client(object):
                        page_token='',
                        page_size=10,
                        sort_by='',
-                       filter=None) -> kfp_server_api.ApiListPipelinesResponse:
+                       filter=None,
+                       namespace=None) -> kfp_server_api.ApiListPipelinesResponse:
         """List pipelines.
 
         Args:
@@ -670,14 +680,21 @@ class Client(object):
           sort_by: one of 'field_name', 'field_name desc'. For example, 'name desc'.
           filter: A url-encoded, JSON-serialized Filter protocol buffer
             (see [filter.proto](https://github.com/kubeflow/pipelines/blob/master/backend/api/filter.proto)).
+          namespace: Kubernetes namespace where the pipeline was created.
+            For single user deployment, leave it as None;
+            For multi user, input a namespace where the user is authorized.
 
         Returns:
           A response object including a list of pipelines and next page token.
         """
+        namespace = namespace or self.get_user_namespace()
         return self._pipelines_api.list_pipelines(
             page_token=page_token,
             page_size=page_size,
             sort_by=sort_by,
+            resource_reference_key_type=kfp_server_api.models.api_resource_type
+            .ApiResourceType.NAMESPACE,
+            resource_reference_key_id=namespace,
             filter=filter)
 
     # TODO: provide default namespace, similar to kubectl default namespaces.
