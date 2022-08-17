@@ -1363,7 +1363,6 @@ class Client(object):
 
         if description:
             kwargs['description'] = description
-
         try:
             response = self._upload_api.upload_pipeline_version(
                 pipeline_package_path, **kwargs)
