@@ -477,7 +477,7 @@ class Client(object):
 
         Args:
           name: Pipeline name.
-          namespace: Kubernetes namespace where the experiment was created.
+          namespace: Kubernetes namespace where the pipeline was created.
             For single user deployment, leave it as None;
             For multi user, input a namespace where the user is authorized.
 
@@ -1332,6 +1332,7 @@ class Client(object):
         pipeline_id: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         description: Optional[str] = None,
+        namespace: Optional[str] = None,
     ) -> kfp_server_api.ApiPipelineVersion:
         """Uploads a new version of the pipeline to the Kubeflow Pipelines cluster.
 
@@ -1341,6 +1342,7 @@ class Client(object):
           pipeline_id: Optional. Id of the pipeline.
           pipeline_name: Optional. Name of the pipeline.
           description: Optional. Description of the pipeline version to be shown in the UI.
+          namespace: Optional. Kubernetes namespace where the pipeline was uploaded to.
 
         Returns:
           Server response object containing pipleine id and other information.
@@ -1355,7 +1357,7 @@ class Client(object):
             raise ValueError('Either pipeline_id or pipeline_name is required')
 
         if pipeline_name:
-            pipeline_id = self.get_pipeline_id(pipeline_name)
+            pipeline_id = self.get_pipeline_id(pipeline_name, namespace)
         kwargs = dict(
             name=pipeline_version_name,
             pipelineid=pipeline_id,
