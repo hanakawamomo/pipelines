@@ -1332,7 +1332,6 @@ class Client(object):
         pipeline_id: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         description: Optional[str] = None,
-        namespace: Optional[str] = None,
     ) -> kfp_server_api.ApiPipelineVersion:
         """Uploads a new version of the pipeline to the Kubeflow Pipelines cluster.
 
@@ -1342,7 +1341,6 @@ class Client(object):
           pipeline_id: Optional. Id of the pipeline.
           pipeline_name: Optional. Name of the pipeline.
           description: Optional. Description of the pipeline version to be shown in the UI.
-          namespace: Optional. Kubernetes namespace where the pipeline should be uploaded to.
 
         Returns:
           Server response object containing pipleine id and other information.
@@ -1363,11 +1361,8 @@ class Client(object):
             pipelineid=pipeline_id,
         )
 
-        namespace = namespace or self.get_user_namespace()
         if description:
             kwargs['description'] = description
-        if namespace:
-            kwargs['namespace'] = namespace
 
         try:
             response = self._upload_api.upload_pipeline_version(
