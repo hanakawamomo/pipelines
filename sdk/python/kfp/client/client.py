@@ -484,11 +484,14 @@ class Client:
 
         return experiment
 
-    def get_pipeline_id(self, name: str) -> Optional[str]:
+    def get_pipeline_id(self, name: str, namespace: Optional[str] = None) -> Optional[str]:
         """Gets the ID of a pipeline by its name.
 
         Args:
             name: Pipeline name.
+            namespace: Kubernetes namespace where the pipeline was created.
+              For single user deployment, leave it as None;
+              For multi user, input a namespace where the user is authorized.
 
         Returns:
             The pipeline ID if a pipeline with the name exists.
@@ -500,7 +503,16 @@ class Client:
                 'stringValue': name,
             }]
         })
-        result = self._pipelines_api.list_pipelines(filter=pipeline_filter)
+        namespace = namespace or self.get_user_namespace()
+        if namespace:
+            result = self._pipelines_api.list_pipelines(
+                filter=pipeline_filter,
+                resource_reference_key_type=kfp_server_api.models.api_resource_type
+                .ApiResourceType.NAMESPACE,
+                resource_reference_key_id=namespace,
+            )
+        else:
+            result = self._pipelines_api.list_pipelines(filter=pipeline_filter)
         if result.pipelines is None:
             return None
         if len(result.pipelines) == 1:
@@ -691,7 +703,8 @@ class Client:
         page_token: str = '',
         page_size: int = 10,
         sort_by: str = '',
-        filter: Optional[str] = None
+        filter: Optional[str] = None,
+        namespace: Optional[str] = None,
     ) -> kfp_server_api.ApiListPipelinesResponse:
         """Lists pipelines.
 
@@ -711,10 +724,23 @@ class Client:
                             "stringValue": "my-name",
                         }]
                     })
+            namespace: Kubernetes namespace where the pipeline was created.
+              For single user deployment, leave it as None;
+              For multi user, input a namespace where the user is authorized.
 
         Returns:
             ``ApiListPipelinesResponse`` object.
         """
+        namespace = namespace or self.get_user_namespace()
+        if namespace:
+            return self._pipelines_api.list_pipelines(
+                page_token=page_token,
+                page_size=page_size,
+                sort_by=sort_by,
+                resource_reference_key_type=kfp_server_api.models.api_resource_type
+                .ApiResourceType.NAMESPACE,
+                resource_reference_key_id=namespace,
+                filter=filter)
         return self._pipelines_api.list_pipelines(
             page_token=page_token,
             page_size=page_size,
@@ -1359,6 +1385,7 @@ class Client:
         pipeline_package_path: str,
         pipeline_name: Optional[str] = None,
         description: Optional[str] = None,
+        namespace: Optional[str] = None,
     ) -> kfp_server_api.ApiPipeline:
         """Uploads a pipeline.
 
@@ -1367,6 +1394,7 @@ class Client:
             pipeline_name: Name of the pipeline to be shown in the UI.
             description: Description of the pipeline to be shown in
                 the UI.
+            namespace: Optional. Kubernetes namespace where the pipeline should be uploaded to.
 
         Returns:
             ``ApiPipeline`` object.
@@ -1376,8 +1404,9 @@ class Client:
                 os.path.basename('something/file.txt'))[0]
 
         validate_pipeline_resource_name(pipeline_name)
+        namespace = namespace or self.get_user_namespace()
         response = self._upload_api.upload_pipeline(
-            pipeline_package_path, name=pipeline_name, description=description)
+            pipeline_package_path, name=pipeline_name, description=description, namespace=namespace)
         link = f'{self._get_url_prefix()}/#/pipelines/details/{response.id}'
         if self._is_ipython():
             import IPython
@@ -1395,6 +1424,7 @@ class Client:
         pipeline_id: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         description: Optional[str] = None,
+        namespace: Optional[str] = None,
     ) -> kfp_server_api.ApiPipelineVersion:
         """Uploads a new version of the pipeline.
 
@@ -1405,6 +1435,7 @@ class Client:
             pipeline_id: ID of the pipeline.
             pipeline_name: Name of the pipeline.
             description: Description of the pipeline version to show in the UI.
+            namespace: Optional. Kubernetes namespace where the pipeline was uploaded to.
 
         Returns:
             ``ApiPipelineVersion`` object.
@@ -1414,8 +1445,9 @@ class Client:
                ]) or not any([pipeline_id, pipeline_name]):
             raise ValueError('Either pipeline_id or pipeline_name is required')
 
+        namespace = namespace or self.get_user_namespace()
         if pipeline_name:
-            pipeline_id = self.get_pipeline_id(pipeline_name)
+            pipeline_id = self.get_pipeline_id(pipeline_name, namespace)
         kwargs = dict(
             name=pipeline_version_name,
             pipelineid=pipeline_id,
@@ -1427,7 +1459,7 @@ class Client:
         response = self._upload_api.upload_pipeline_version(
             pipeline_package_path, **kwargs)
 
-        link = f'{self._get_url_prefix()}/#/pipelines/details/{response.id}'
+        link = f'{self._get_url_prefix()}/#/pipelines/details/{pipeline_id}/version/{response.id}'
         if self._is_ipython():
             import IPython
             html = f'<a href="{link}" target="_blank" >Pipeline details</a>.'
