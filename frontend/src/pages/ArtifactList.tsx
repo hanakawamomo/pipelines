@@ -17,6 +17,7 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ListRequest } from 'src/lib/Apis';
+import { NamespaceContext } from 'src/lib/KubeflowClient';
 import {
   Api,
   ArtifactCustomProperties,
@@ -25,7 +26,12 @@ import {
   getArtifactTypes,
   getResourcePropertyViaFallBack,
 } from 'src/mlmd/library';
-import { Artifact, ArtifactType, GetArtifactsRequest } from 'src/third_party/mlmd';
+import {
+  Artifact,
+  ArtifactType,
+  GetArtifactsRequest,
+  ListOperationOptions,
+} from 'src/third_party/mlmd';
 import { classes } from 'typestyle';
 import { ArtifactLink } from '../components/ArtifactLink';
 import CustomTable, {
@@ -39,6 +45,7 @@ import { ToolbarProps } from '../components/Toolbar';
 import { commonCss, padding } from '../Css';
 import {
   CollapsedAndExpandedRows,
+  formatDateString,
   getExpandedRow,
   getStringEnumKey,
   groupRows,
@@ -46,7 +53,7 @@ import {
   rowFilterFn,
   serviceErrorToString,
 } from '../lib/Utils';
-import { Page } from './Page';
+import { Page, PageProps } from './Page';
 
 interface ArtifactListState {
   artifacts: Artifact[];
@@ -62,7 +69,48 @@ const NAME_FIELDS = [
   getStringEnumKey(ArtifactCustomProperties, ArtifactCustomProperties.DISPLAY_NAME),
 ];
 
-export class ArtifactList extends Page<{}, ArtifactListState> {
+const DBX_ARTIFACT_SOURCE = 'minio';
+const DBX_ARTIFACT_BUCKET = ''; // TODO: look into why bucket name is empty
+
+const makeGetArtifactsRequest = (
+  namespace?: string,
+  loadRequest?: ListRequest,
+): GetArtifactsRequest => {
+  console.debug('loadRequest', loadRequest);
+  const options = new ListOperationOptions();
+  const keyPrefix = namespace || 'shared';
+
+  let query = `uri LIKE '${DBX_ARTIFACT_SOURCE}://${DBX_ARTIFACT_BUCKET}/artifacts/${keyPrefix}/%'`;
+  if (!!loadRequest?.filter) {
+    // only support filter by custom_properties (name, pipeline_name or run_id) for now
+    const filterString = JSON.parse(decodeURIComponent(loadRequest.filter)).predicates[0].string_value;
+    query += ` AND (custom_properties.name.string_value LIKE '%${filterString}%' \
+OR custom_properties.pipeline_name.string_value LIKE '%${filterString}%' \
+OR custom_properties.run_id.string_value LIKE '%${filterString}%')`;
+  }
+  console.debug('query', query);
+  options.setFilterQuery(query);
+
+  if (!!loadRequest?.sortBy) {
+    const orderByField = new ListOperationOptions.OrderByField();
+    orderByField.setField(
+      loadRequest.sortBy === 'created_at'
+        ? ListOperationOptions.OrderByField.Field.CREATE_TIME
+        : ListOperationOptions.OrderByField.Field.ID,
+    );
+    orderByField.setIsAsc(!!loadRequest.orderAscending);
+    options.setOrderByField(orderByField);
+  }
+
+  if (!!loadRequest?.pageToken) {
+    options.setNextPageToken(loadRequest.pageToken);
+  }
+  options.setMaxResultSize(loadRequest?.pageSize || 10);
+  console.debug('options', options);
+  return new GetArtifactsRequest().setOptions(options);
+};
+
+export class ArtifactList extends Page<{ namespace?: string }, ArtifactListState> {
   private tableRef = React.createRef<CustomTable>();
   private api = Api.getInstance();
   private artifactTypesMap: Map<number, ArtifactType>;
@@ -76,17 +124,17 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
           customRenderer: this.nameCustomRenderer,
           flex: 2,
           label: 'Pipeline/Workspace',
-          sortKey: 'pipelineName',
+          /* sortKey: 'pipelineName', */
         },
         {
           customRenderer: this.nameCustomRenderer,
           flex: 1,
           label: 'Name',
-          sortKey: 'name',
+          /* sortKey: 'name', */
         },
         { label: 'ID', flex: 1, sortKey: 'id' },
-        { label: 'Type', flex: 2, sortKey: 'type' },
-        { label: 'URI', flex: 2, sortKey: 'uri', customRenderer: this.uriCustomRenderer },
+        { label: 'Type', flex: 2, /* sortKey: 'type' */ },
+        { label: 'URI', flex: 2, /* sortKey: 'uri', */ customRenderer: this.uriCustomRenderer },
         { label: 'Created at', flex: 1, sortKey: 'created_at' },
       ],
       expandedRows: new Map(),
@@ -113,13 +161,13 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
           ref={this.tableRef}
           columns={columns}
           rows={rows}
-          disablePaging={true}
           disableSelection={true}
           reload={this.reload}
-          initialSortColumn='pipelineName'
+          initialSortColumn='id'
           initialSortOrder='asc'
           getExpandComponent={this.getExpandedArtifactsRow}
           toggleExpansion={this.toggleRowExpand}
+          filterLabel='Filter artifacts'
           emptyMessage='No artifacts found.'
         />
       </div>
@@ -140,17 +188,16 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
         this.showPageError.bind(this),
       );
     }
-    if (!this.state.artifacts.length) {
-      const artifacts = await this.getArtifacts();
-      this.clearBanner();
-      const collapsedAndExpandedRows = await this.getRowsFromArtifacts(request, artifacts);
-      if (collapsedAndExpandedRows) {
-        this.setState({
-          artifacts,
-          expandedRows: collapsedAndExpandedRows.expandedRows,
-          rows: collapsedAndExpandedRows.collapsedRows,
-        });
-      }
+    const artifacts = await this.getArtifacts(request);
+    console.debug('Got artifacts', artifacts);
+    this.clearBanner();
+    const collapsedAndExpandedRows = this.groupRowsFromArtifacts(artifacts);
+    if (collapsedAndExpandedRows) {
+      this.setState({
+        artifacts,
+        expandedRows: collapsedAndExpandedRows.expandedRows,
+        rows: collapsedAndExpandedRows.collapsedRows,
+      });
     }
     return '';
   }
@@ -173,9 +220,10 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
     <ArtifactLink artifactUri={value} />
   );
 
-  private async getArtifacts(): Promise<Artifact[]> {
+  private async getArtifacts(loadRequest: ListRequest): Promise<Artifact[]> {
     try {
-      const response = await this.api.metadataStoreService.getArtifacts(new GetArtifactsRequest());
+      const request = makeGetArtifactsRequest(this.props.namespace, loadRequest);
+      const response = await this.api.metadataStoreService.getArtifacts(request);
       return response.getArtifactsList();
     } catch (err) {
       // Code === 5 means no record found in backend. This is a temporary workaround.
@@ -185,6 +233,33 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
       }
     }
     return [];
+  }
+
+  private groupRowsFromArtifacts(artifacts: Artifact[]): CollapsedAndExpandedRows {
+    return groupRows(
+      artifacts.map((artifact) => {
+        const typeId = artifact.getTypeId();
+        const artifactType = this.artifactTypesMap!.get(typeId);
+        const type = artifactType ? artifactType.getName() : artifact.getTypeId();
+        const creationTime = formatDateString(new Date(artifact.getCreateTimeSinceEpoch()));
+        return {
+          id: `${artifact.getId()}`,
+          otherFields: [
+            getResourcePropertyViaFallBack(
+              artifact,
+              ARTIFACT_PROPERTY_REPOS,
+              PIPELINE_WORKSPACE_FIELDS,
+            ) || '[unknown]',
+            getResourcePropertyViaFallBack(artifact, ARTIFACT_PROPERTY_REPOS, NAME_FIELDS) ||
+              '[unknown]',
+            artifact.getId(),
+            type,
+            artifact.getUri(),
+            creationTime || '',
+          ],
+        } as Row;
+      })
+    );
   }
 
   /**
@@ -272,4 +347,9 @@ export class ArtifactList extends Page<{}, ArtifactListState> {
   }
 }
 
-export default ArtifactList;
+const EnhancedArtifactList: React.FC<PageProps> = props => {
+  const namespace = React.useContext(NamespaceContext);
+  return <ArtifactList key={namespace} {...props} namespace={namespace} />;
+};
+
+export default EnhancedArtifactList;
