@@ -20,14 +20,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="theme-color" content="#000000">
-    <link rel="shortcut icon" href="%PUBLIC_URL%/static/favicon.ico">
+    <link nonce="" rel="shortcut icon" href="%PUBLIC_URL%/static/favicon.ico">
     <title>Kubeflow Pipelines</title>
-    <script>
+    <script nonce="">
       window.KFP_FLAGS={};
       window.KFP_FLAGS.DEPLOYMENT=null;
       window.KFP_FLAGS.HIDE_SIDENAV=null;
     </script>
-    <script id="kubeflow-client-placeholder"></script>
+    <script nonce="" id="kubeflow-client-placeholder"></script>
+    <% for (key in htmlWebpackPlugin.files.js) { %>
+      <script nonce="" defer src="<%= htmlWebpackPlugin.files.js[key] %>"></script>
+    <% } %>
+    <% for (key in htmlWebpackPlugin.files.css) { %>
+      <link nonce="" href="<%= htmlWebpackPlugin.files.css[key] %>" rel="stylesheet">
+    <% } %>
   </head>
   <body>
     <noscript>

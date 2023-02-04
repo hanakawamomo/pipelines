@@ -15,9 +15,10 @@ import { Handler } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Deployments } from '../configs';
+import { replaceNonce } from '../nonce';
 
 const DEFAULT_FLAG = 'window.KFP_FLAGS.DEPLOYMENT=null';
-const KUBEFLOW_CLIENT_PLACEHOLDER = '<script id="kubeflow-client-placeholder"></script>';
+const KUBEFLOW_CLIENT_PLACEHOLDER = `<script nonce="" id="kubeflow-client-placeholder"></script>`;
 const DEFAULT_HIDE_SIDENAV_FLAG = 'window.KFP_FLAGS.HIDE_SIDENAV=null';
 
 /**
@@ -30,14 +31,15 @@ export function getIndexHTMLHandler(options: {
   deployment: Deployments;
   hideSideNav: boolean;
 }): Handler {
-  const content = replaceRuntimeContent(
+  let content = replaceRuntimeContent(
     loadIndexHtml(options.staticDir),
     options.deployment,
     options.hideSideNav,
   );
 
-  return function handleIndexHtml(_, res) {
+  return function handleIndexHtml(req, res) {
     if (content) {
+      content = replaceNonce(req, content);
       res.contentType('text/html');
       res.send(content);
     } else {
@@ -79,7 +81,7 @@ function replaceRuntimeContent(
       .replace(DEFAULT_FLAG, 'window.KFP_FLAGS.DEPLOYMENT="KUBEFLOW"')
       .replace(
         KUBEFLOW_CLIENT_PLACEHOLDER,
-        `<script id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>`,
+        `<script nonce="" id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>`,
       );
   }
   if (contentSafe && deployment === Deployments.MARKETPLACE) {

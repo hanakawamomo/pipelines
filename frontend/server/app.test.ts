@@ -46,11 +46,11 @@ describe('UIServer apis', () => {
       const expectedIndexHtml = `
 <html>
 <head>
-  <script>
+  <script nonce="">
   window.KFP_FLAGS.DEPLOYMENT=null
   window.KFP_FLAGS.HIDE_SIDENAV=false
   </script>
-  <script id="kubeflow-client-placeholder"></script>
+  <script nonce="" id="kubeflow-client-placeholder"></script>
 </head>
 </html>`;
       const configs = loadConfigs(argv, {});
@@ -67,11 +67,11 @@ describe('UIServer apis', () => {
       const expectedIndexHtml = `
 <html>
 <head>
-  <script>
+  <script nonce="">
   window.KFP_FLAGS.DEPLOYMENT="KUBEFLOW"
   window.KFP_FLAGS.HIDE_SIDENAV=true
   </script>
-  <script id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>
+  <script nonce="" id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>
 </head>
 </html>`;
       const configs = loadConfigs(argv, { DEPLOYMENT: 'kubeflow' });
@@ -88,11 +88,11 @@ describe('UIServer apis', () => {
       const expectedIndexHtml = `
 <html>
 <head>
-  <script>
+  <script nonce="">
   window.KFP_FLAGS.DEPLOYMENT="MARKETPLACE"
   window.KFP_FLAGS.HIDE_SIDENAV=false
   </script>
-  <script id="kubeflow-client-placeholder"></script>
+  <script nonce="" id="kubeflow-client-placeholder"></script>
 </head>
 </html>`;
       const configs = loadConfigs(argv, { DEPLOYMENT: 'marketplace' });
@@ -110,11 +110,11 @@ describe('UIServer apis', () => {
     const expectedIndexHtml = `
 <html>
 <head>
-  <script>
+  <script nonce="">
   window.KFP_FLAGS.DEPLOYMENT="KUBEFLOW"
   window.KFP_FLAGS.HIDE_SIDENAV=false
   </script>
-  <script id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>
+  <script nonce="" id="kubeflow-client-placeholder" src="/dashboard_lib.bundle.js"></script>
 </head>
 </html>`;
     const configs = loadConfigs(argv, { DEPLOYMENT: 'KUBEFLOW', HIDE_SIDENAV: 'false' });
