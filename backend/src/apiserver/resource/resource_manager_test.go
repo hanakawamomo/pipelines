@@ -51,7 +51,7 @@ func initEnvVars() {
 
 type FakeBadObjectStore struct{}
 
-func (m *FakeBadObjectStore) GetPipelineKey(pipelineID string) string {
+func (m *FakeBadObjectStore) GetPipelineKey(pipelineID string, namespace string) string {
 	return pipelineID
 }
 
@@ -584,7 +584,7 @@ func TestGetPipelineTemplate_PipelineMetadataNotFound(t *testing.T) {
 	store := NewFakeClientManagerOrFatal(util.NewFakeTimeForEpoch())
 	defer store.Close()
 	template := []byte("workflow: foo")
-	store.objectStore.AddFile(template, store.objectStore.GetPipelineKey(fmt.Sprint(1)))
+	store.objectStore.AddFile(template, store.objectStore.GetPipelineKey(fmt.Sprint(1), ""))
 	manager := NewResourceManager(store)
 	_, err := manager.GetPipelineTemplate("1")
 	assert.Equal(t, codes.NotFound, err.(*util.UserError).ExternalStatusCode())

@@ -35,7 +35,7 @@ type ObjectStoreInterface interface {
 	GetFile(filePath string) ([]byte, error)
 	AddAsYamlFile(o interface{}, filePath string) error
 	GetFromYamlFile(o interface{}, filePath string) error
-	GetPipelineKey(pipelineId string) string
+	GetPipelineKey(pipelineId string, namespace string) string
 }
 
 // Managing pipeline using Minio
@@ -46,9 +46,9 @@ type MinioObjectStore struct {
 	disableMultipart bool
 }
 
-// GetPipelineKey adds the configured base folder to pipeline id.
-func (m *MinioObjectStore) GetPipelineKey(pipelineID string) string {
-	return path.Join(m.baseFolder, pipelineID)
+// GetPipelineKey adds the configured base folder to pipeline id, prefixed with namespace
+func (m *MinioObjectStore) GetPipelineKey(pipelineID string, namespace string) string {
+	return path.Join(m.baseFolder, namespace, pipelineID)
 }
 
 func (m *MinioObjectStore) AddFile(file []byte, filePath string) error {
